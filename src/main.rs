@@ -9,18 +9,10 @@ mod gl {
 
 fn main() {
     let el = EventLoop::new();
-    let wb = WindowBuilder::new()
-        .with_title("A fantastic window!")
-        .with_transparent(true);
+    let wb = WindowBuilder::new().with_title("A fantastic window!");
 
     let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
-
     let windowed_context = unsafe { windowed_context.make_current().unwrap() };
-
-    println!(
-        "Pixel format of the window's GL context: {:?}",
-        windowed_context.get_pixel_format()
-    );
 
     gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
 
@@ -36,7 +28,7 @@ fn main() {
             },
             Event::RedrawRequested(_) => {
                 unsafe {
-                    gl::ClearColor(0.3, 0.3, 0.3, 1.0);
+                    gl::ClearColor(0., 0., 0., 1.);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
                 }
                 windowed_context.swap_buffers().unwrap();
