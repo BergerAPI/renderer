@@ -12,7 +12,7 @@ mod vectors {
 }
 
 mod renderer;
-pub use renderer::{RectRenderer, RenderRect, Rgb};
+pub use renderer::{RenderRect, Renderer, Rgb};
 pub use vectors::Vec2f;
 
 use glutin::dpi::LogicalSize;
@@ -32,7 +32,7 @@ fn main() {
 
     gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
 
-    let mut renderer = RectRenderer::new().unwrap();
+    let mut renderer = Renderer::new().unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -49,9 +49,9 @@ fn main() {
                     gl::ClearColor(0., 0., 0., 1.);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
-                    renderer.draw(
+                    renderer.rectangle(
                         size,
-                        vec![RenderRect {
+                        &mut RenderRect {
                             x: 0.,
                             y: 0.,
                             width: 200.,
@@ -61,8 +61,21 @@ fn main() {
                                 g: 255,
                                 b: 0,
                             },
-                        }],
+                        },
                     );
+
+                    renderer.rectangle(
+                        size,
+                        &mut RenderRect {
+                            x: 150.,
+                            y: 150.,
+                            width: 200.,
+                            height: 200.,
+                            color: Rgb { r: 255, g: 0, b: 0 },
+                        },
+                    );
+
+                    renderer.draw(size);
                 }
                 windowed_context.swap_buffers().unwrap();
             }

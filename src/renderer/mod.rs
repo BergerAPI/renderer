@@ -36,7 +36,7 @@ struct Vertex {
 }
 
 #[derive(Debug)]
-pub struct RectRenderer {
+pub struct Renderer {
     vao: GLuint,
     vbo: GLuint,
 
@@ -45,7 +45,7 @@ pub struct RectRenderer {
     vertices: Vec<Vertex>,
 }
 
-impl RectRenderer {
+impl Renderer {
     pub fn new() -> Result<Self, shader::ShaderError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
@@ -96,15 +96,10 @@ impl RectRenderer {
         })
     }
 
-    pub fn draw(&mut self, size: Vec2f, rects: Vec<RenderRect>) {
+    pub fn draw(&mut self, size: Vec2f) {
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
-
-            self.vertices.clear();
-            for rect in &rects {
-                self.add_rect(size, rect);
-            }
 
             gl::BufferData(
                 gl::ARRAY_BUFFER,
@@ -121,9 +116,11 @@ impl RectRenderer {
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
+
+        self.vertices.clear();
     }
 
-    fn add_rect(&mut self, size: Vec2f, rect: &RenderRect) {
+    pub fn rectangle(&mut self, size: Vec2f, rect: &RenderRect) {
         let x = rect.x / (size.x / 2.) - 1.0;
         let y = -rect.y / (size.y / 2.) + 1.0;
         let quad = [
@@ -166,7 +163,7 @@ impl RectRenderer {
     }
 }
 
-impl Drop for RectRenderer {
+impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1, &self.vbo);
