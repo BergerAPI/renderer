@@ -1,3 +1,5 @@
+// oriented by the renderer of Alacritty
+
 mod shader;
 
 use crate::gl;
@@ -41,12 +43,13 @@ pub struct Renderer {
     vbo: GLuint,
 
     program: shader::Program,
+    size: Vec2f,
 
     vertices: Vec<Vertex>,
 }
 
 impl Renderer {
-    pub fn new() -> Result<Self, shader::ShaderError> {
+    pub fn new(size: Vec2f) -> Result<Self, shader::ShaderError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
         let program = shader::Program::new(
@@ -92,11 +95,12 @@ impl Renderer {
             vao,
             vbo,
             program,
+            size,
             vertices: Vec::new(),
         })
     }
 
-    pub fn draw(&mut self, size: Vec2f) {
+    pub fn draw(&mut self) {
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo);
@@ -120,9 +124,9 @@ impl Renderer {
         self.vertices.clear();
     }
 
-    pub fn rectangle(&mut self, size: Vec2f, rect: &RenderRect) {
-        let x = rect.x / (size.x / 2.) - 1.0;
-        let y = -rect.y / (size.y / 2.) + 1.0;
+    pub fn rectangle(&mut self, rect: &RenderRect) {
+        let x = rect.x / (self.size.x / 2.) - 1.0;
+        let y = -rect.y / (self.size.y / 2.) + 1.0;
         let quad = [
             Vertex {
                 x,
@@ -133,21 +137,21 @@ impl Renderer {
             },
             Vertex {
                 x,
-                y: y - rect.height / (size.y / 2.),
+                y: y - rect.height / (self.size.y / 2.),
                 r: rect.color.r,
                 g: rect.color.g,
                 b: rect.color.b,
             },
             Vertex {
-                x: x + rect.width / (size.x / 2.),
+                x: x + rect.width / (self.size.x / 2.),
                 y,
                 r: rect.color.r,
                 g: rect.color.g,
                 b: rect.color.b,
             },
             Vertex {
-                x: x + rect.width / (size.x / 2.),
-                y: y - rect.height / (size.y / 2.),
+                x: x + rect.width / (self.size.x / 2.),
+                y: y - rect.height / (self.size.y / 2.),
                 r: rect.color.r,
                 g: rect.color.g,
                 b: rect.color.b,
