@@ -8,6 +8,8 @@ build = "build/build.rs"
 
 [dependencies]
 glutin = "0.27.0"
+crossfont = { version = "0.3.1", features = ["force_system_fontconfig"] }
+fnv = "1"
 
 [build-dependencies]
 gl_generator = "0.14.0"

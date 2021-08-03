@@ -56,15 +56,17 @@ impl Shader {
             let mut success: GLint = 0;
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
 
-            if success == GLint::from(gl::TRUE) {
-                Ok(Self { id: shader })
-            } else {
+            println!("{}", success);
+
+            if success == 0 {
                 let log = get_shader_info_log(shader);
 
                 gl::DeleteShader(shader);
 
-                Err(ShaderError::Compile(log))
+                return Err(ShaderError::Compile(log));
             }
+
+            Ok(Self { id: shader })
         }
     }
 
@@ -118,7 +120,7 @@ fn get_program_info_log(program: GLuint) -> String {
 
 fn get_shader_info_log(shader: GLuint) -> String {
     unsafe {
-        let mut max_length: GLint = 0;
+        let mut max_length: GLint = gl::INFO_LOG_LENGTH as i32;
         let mut actual_length: GLint = 0;
         let mut buf: Vec<u8> = Vec::with_capacity(max_length as usize);
 

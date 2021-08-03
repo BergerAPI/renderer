@@ -1,6 +1,7 @@
 // oriented by the renderer of Alacritty
 
-mod shader;
+pub mod font;
+pub mod shader;
 
 use crate::gl;
 use crate::vectors::Vec2f;

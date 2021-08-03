@@ -12,6 +12,7 @@ mod vectors {
 }
 
 mod renderer;
+pub use renderer::font::TextRenderer;
 pub use renderer::{RenderRect, Renderer, Rgb};
 pub use vectors::Vec2f;
 
@@ -34,6 +35,7 @@ fn main() {
     gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
 
     let mut renderer = Renderer::new(size).unwrap();
+    let mut font = TextRenderer::new(size).unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -71,6 +73,7 @@ fn main() {
                     });
 
                     renderer.draw();
+                    font.draw_char('n', 20, 20);
                 }
                 windowed_context.swap_buffers().unwrap();
             }
