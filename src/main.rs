@@ -52,28 +52,9 @@ fn main() {
                     gl::ClearColor(0., 0., 0., 1.);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
-                    renderer.rectangle(&mut RenderRect {
-                        x: 0.,
-                        y: 0.,
-                        width: 200.,
-                        height: 200.,
-                        color: Rgb {
-                            r: 255,
-                            g: 255,
-                            b: 0,
-                        },
-                    });
-
-                    renderer.rectangle(&mut RenderRect {
-                        x: 150.,
-                        y: 150.,
-                        width: 200.,
-                        height: 200.,
-                        color: Rgb { r: 255, g: 0, b: 0 },
-                    });
-
                     renderer.draw();
-                    font.draw_char('n', 20, 20);
+                    font.draw_char('元', 20, 20);
+                    //font.draw_char('b', 50, 20);
                 }
                 windowed_context.swap_buffers().unwrap();
             }

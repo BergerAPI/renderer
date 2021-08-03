@@ -16,11 +16,21 @@ use crossfont::{
     RasterizedGlyph, Rasterizer, Size, Slant, Style, Weight,
 };
 
+use bitflags::bitflags;
+
 const BATCH_MAX: usize = 0x1_0000;
 const ATLAS_SIZE: i32 = 1024;
 
 static FRAGMENT: &str = include_str!("../../res/text.frag");
 static VERTEX: &str = include_str!("../../res/text.vert");
+
+bitflags! {
+    #[repr(C)]
+    struct RenderingGlyphFlags: u8 {
+        const WIDE_CHAR = 0b0000_0001;
+        const COLORED   = 0b0000_0010;
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Glyph {
@@ -52,6 +62,11 @@ struct InstanceData {
     r: u8,
     g: u8,
     b: u8,
+    cell_flags: RenderingGlyphFlags,
+    bg_r: u8,
+    bg_g: u8,
+    bg_b: u8,
+    bg_a: u8,
 }
 
 #[derive(Debug, Default)]
@@ -99,6 +114,10 @@ impl Batch {
             self.tex = glyph.tex_id;
         }
 
+        let mut cell_flags = RenderingGlyphFlags::empty();
+        cell_flags.set(RenderingGlyphFlags::COLORED, glyph.multicolor);
+        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, false);
+
         self.instances.push(InstanceData {
             x,
             y,
@@ -113,6 +132,11 @@ impl Batch {
             uv_left: glyph.uv_left,
             uv_width: glyph.uv_width,
             uv_height: glyph.uv_height,
+            cell_flags,
+            bg_r: 0,
+            bg_g: 0,
+            bg_b: 0,
+            bg_a: 0,
         });
     }
 
@@ -147,17 +171,17 @@ impl Batch {
     }
 }
 
-fn compute_font_keys(rasterizer: &mut Rasterizer) -> FontKey {
+fn compute_font_keys(rasterizer: &mut Rasterizer, size: Size) -> FontKey {
     rasterizer
         .load_font(
             &FontDesc::new(
-                "",
+                "Arial",
                 Style::Description {
                     slant: Slant::Normal,
                     weight: Weight::Normal,
                 },
             ),
-            Size::new(32.),
+            size,
         )
         .unwrap()
 }
@@ -172,8 +196,8 @@ impl TextRenderer {
         let mut vao: GLuint = 0;
         let mut ebo: GLuint = 0;
 
-        let scale_x = 2. / (size.x - 2.);
-        let scale_y = -2. / (size.y - 2.);
+        let scale_x = 2. / size.x;
+        let scale_y = -2. / size.y;
         let offset_x = -1.;
         let offset_y = 1.;
 
@@ -188,11 +212,10 @@ impl TextRenderer {
                 scale_x,
                 scale_y,
             );
-            gl::UseProgram(0);
 
+            gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC1_COLOR, gl::ONE_MINUS_SRC1_COLOR);
             gl::Enable(gl::MULTISAMPLE);
-
             gl::DepthMask(gl::FALSE);
 
             gl::GenVertexArrays(1, &mut vao);
@@ -246,14 +269,20 @@ impl TextRenderer {
             add_attr!(4, gl::SHORT, i16);
             add_attr!(4, gl::FLOAT, f32);
             add_attr!(4, gl::UNSIGNED_BYTE, u8);
+            add_attr!(4, gl::UNSIGNED_BYTE, u8);
 
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::UseProgram(0);
+
+            gl::Disable(gl::BLEND);
+            gl::Disable(gl::MULTISAMPLE);
         }
 
         let mut rasterizer = Rasterizer::new(1., false).unwrap();
-        let font_key = compute_font_keys(&mut rasterizer);
+        let size = Size::new(32.);
+        let font_key = compute_font_keys(&mut rasterizer, size);
 
         let mut renderer = Self {
             program,
@@ -266,8 +295,8 @@ impl TextRenderer {
             batch: Batch::new(),
             cache: HashMap::default(),
             rasterizer: rasterizer,
-            size: Size::new(32.),
-            font_key: font_key,
+            size,
+            font_key,
         };
 
         let atlas = Atlas::new(ATLAS_SIZE);
@@ -295,6 +324,11 @@ impl TextRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_instance);
             gl::ActiveTexture(gl::TEXTURE0);
 
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC1_COLOR, gl::ONE_MINUS_SRC1_COLOR);
+            gl::Enable(gl::MULTISAMPLE);
+            gl::DepthMask(gl::FALSE);
+
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
                 0,
@@ -307,6 +341,16 @@ impl TextRenderer {
                 self.active_tex = self.batch.tex;
             }
 
+            let background_pass =
+                gl::GetUniformLocation(self.program.id, b"backgroundPass\0".as_ptr() as *const _);
+
+            gl::Uniform2f(
+                gl::GetUniformLocation(self.program.id, b"cellDim\0".as_ptr() as *const _),
+                15.,
+                15.,
+            );
+            gl::Uniform1i(background_pass, 1);
+
             gl::DrawElementsInstanced(
                 gl::TRIANGLES,
                 6,
@@ -315,11 +359,23 @@ impl TextRenderer {
                 self.batch.len() as GLsizei,
             );
 
+            gl::Uniform1i(background_pass, 0);
+
+            gl::DrawElementsInstanced(
+                gl::TRIANGLES,
+                6,
+                gl::UNSIGNED_INT,
+                ptr::null(),
+                self.batch.len() as GLsizei,
+            );
+
+            gl::Disable(gl::BLEND);
+            gl::Disable(gl::MULTISAMPLE);
+
+            gl::UseProgram(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
-
-            gl::UseProgram(0);
 
             self.batch.clear();
         }
@@ -340,7 +396,6 @@ impl TextRenderer {
                 if let Some(glyph) = self.cache.get(&missing_key) {
                     *glyph
                 } else {
-                    // If no missing glyph was loaded yet, insert it as `\0`.
                     let glyph = self.load_glyph(rasterized);
                     self.cache.insert(missing_key, glyph);
 
@@ -360,7 +415,7 @@ impl TextRenderer {
                 self.current_atlas += 1;
                 if self.current_atlas == self.atlas.len() {
                     let new = Atlas::new(ATLAS_SIZE);
-                    self.active_tex = 0; // Atlas::new binds a texture. Ugh this is sloppy.
+                    self.active_tex = 0;
                     self.atlas.push(new);
                 }
                 self.load_glyph(rasterized)
@@ -423,6 +478,7 @@ impl Atlas {
         }
     }
 
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.row_extent = 0;
         self.row_baseline = 0;
@@ -459,7 +515,6 @@ impl Atlas {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
 
-            // Load data into OpenGL.
             let (format, buffer) = match &glyph.buffer {
                 BitmapBuffer::Rgb(buffer) => {
                     multicolor = false;
@@ -498,6 +553,8 @@ impl Atlas {
         let uv_left = offset_x as f32 / self.width as f32;
         let uv_height = height as f32 / self.height as f32;
         let uv_width = width as f32 / self.width as f32;
+
+        println!("{}", self.id);
 
         Glyph {
             tex_id: self.id,

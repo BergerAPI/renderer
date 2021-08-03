@@ -947,6 +947,7 @@ dependencies = [
 name = "renderer"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "crossfont",
  "fnv",
  "gl_generator",
