@@ -63,10 +63,6 @@ struct InstanceData {
     g: u8,
     b: u8,
     cell_flags: RenderingGlyphFlags,
-    bg_r: u8,
-    bg_g: u8,
-    bg_b: u8,
-    bg_a: u8,
 }
 
 #[derive(Debug, Default)]
@@ -116,7 +112,7 @@ impl Batch {
 
         let mut cell_flags = RenderingGlyphFlags::empty();
         cell_flags.set(RenderingGlyphFlags::COLORED, glyph.multicolor);
-        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, false);
+        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, true);
 
         self.instances.push(InstanceData {
             x,
@@ -133,10 +129,6 @@ impl Batch {
             uv_width: glyph.uv_width,
             uv_height: glyph.uv_height,
             cell_flags,
-            bg_r: 0,
-            bg_g: 0,
-            bg_b: 0,
-            bg_a: 0,
         });
     }
 
@@ -341,26 +333,11 @@ impl TextRenderer {
                 self.active_tex = self.batch.tex;
             }
 
-            let background_pass =
-                gl::GetUniformLocation(self.program.id, b"backgroundPass\0".as_ptr() as *const _);
-
             gl::Uniform2f(
                 gl::GetUniformLocation(self.program.id, b"cellDim\0".as_ptr() as *const _),
                 15.,
                 15.,
             );
-            gl::Uniform1i(background_pass, 1);
-
-            gl::DrawElementsInstanced(
-                gl::TRIANGLES,
-                6,
-                gl::UNSIGNED_INT,
-                ptr::null(),
-                self.batch.len() as GLsizei,
-            );
-
-            gl::Uniform1i(background_pass, 0);
-
             gl::DrawElementsInstanced(
                 gl::TRIANGLES,
                 6,

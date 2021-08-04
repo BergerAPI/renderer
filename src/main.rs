@@ -54,6 +54,11 @@ fn main() {
 
                     renderer.draw();
                     font.draw_char('元', 20, 20);
+                    font.draw_char('😍', 60, 20);
+                    font.draw_char('P', 120, 20);
+                    font.draw_char('e', 160, 20);
+                    font.draw_char('u', 240, 20);
+                    font.draw_char('u', 300, 20);
                     //font.draw_char('b', 50, 20);
                 }
                 windowed_context.swap_buffers().unwrap();
