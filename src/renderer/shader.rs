@@ -56,8 +56,6 @@ impl Shader {
             let mut success: GLint = 0;
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
 
-            println!("{}", success);
-
             if success == 0 {
                 let log = get_shader_info_log(shader);
 

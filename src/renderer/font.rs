@@ -112,7 +112,7 @@ impl Batch {
 
         let mut cell_flags = RenderingGlyphFlags::empty();
         cell_flags.set(RenderingGlyphFlags::COLORED, glyph.multicolor);
-        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, true);
+        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, false);
 
         self.instances.push(InstanceData {
             x,
@@ -133,18 +133,8 @@ impl Batch {
     }
 
     #[inline]
-    pub fn full(&self) -> bool {
-        self.capacity() == self.len()
-    }
-
-    #[inline]
     pub fn len(&self) -> usize {
         self.instances.len()
-    }
-
-    #[inline]
-    pub fn capacity(&self) -> usize {
-        BATCH_MAX
     }
 
     #[inline]
@@ -167,7 +157,7 @@ fn compute_font_keys(rasterizer: &mut Rasterizer, size: Size) -> FontKey {
     rasterizer
         .load_font(
             &FontDesc::new(
-                "Arial",
+                "FiraCode Nerd Font",
                 Style::Description {
                     slant: Slant::Normal,
                     weight: Weight::Normal,
@@ -179,7 +169,7 @@ fn compute_font_keys(rasterizer: &mut Rasterizer, size: Size) -> FontKey {
 }
 
 impl TextRenderer {
-    pub fn new(size: Vec2f) -> Result<TextRenderer, ShaderError> {
+    pub fn new(screen_size: Vec2f, dpr: f64) -> Result<TextRenderer, ShaderError> {
         let program = Program::new(
             Shader::new(gl::VERTEX_SHADER, VERTEX)?,
             Shader::new(gl::FRAGMENT_SHADER, FRAGMENT)?,
@@ -188,8 +178,8 @@ impl TextRenderer {
         let mut vao: GLuint = 0;
         let mut ebo: GLuint = 0;
 
-        let scale_x = 2. / size.x;
-        let scale_y = -2. / size.y;
+        let scale_x = 2. / screen_size.x;
+        let scale_y = -2. / screen_size.y;
         let offset_x = -1.;
         let offset_y = 1.;
 
@@ -205,9 +195,11 @@ impl TextRenderer {
                 scale_y,
             );
 
+            gl::UseProgram(0);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC1_COLOR, gl::ONE_MINUS_SRC1_COLOR);
             gl::Enable(gl::MULTISAMPLE);
+
             gl::DepthMask(gl::FALSE);
 
             gl::GenVertexArrays(1, &mut vao);
@@ -261,19 +253,15 @@ impl TextRenderer {
             add_attr!(4, gl::SHORT, i16);
             add_attr!(4, gl::FLOAT, f32);
             add_attr!(4, gl::UNSIGNED_BYTE, u8);
-            add_attr!(4, gl::UNSIGNED_BYTE, u8);
 
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-            gl::UseProgram(0);
-
-            gl::Disable(gl::BLEND);
-            gl::Disable(gl::MULTISAMPLE);
         }
 
-        let mut rasterizer = Rasterizer::new(1., false).unwrap();
-        let size = Size::new(32.);
+        let size = Size::new(26.);
+
+        let mut rasterizer = Rasterizer::new(dpr as f32, false).unwrap();
         let font_key = compute_font_keys(&mut rasterizer, size);
 
         let mut renderer = Self {
@@ -286,13 +274,21 @@ impl TextRenderer {
             active_tex: 0,
             batch: Batch::new(),
             cache: HashMap::default(),
-            rasterizer: rasterizer,
+            rasterizer,
             size,
             font_key,
         };
 
         let atlas = Atlas::new(ATLAS_SIZE);
         renderer.atlas.push(atlas);
+
+        for i in 32u8..=126u8 {
+            renderer.get_glyph(GlyphKey {
+                font_key,
+                character: i as char,
+                size,
+            });
+        }
 
         Ok(renderer)
     }
@@ -308,18 +304,36 @@ impl TextRenderer {
         self.render_batch();
     }
 
+    pub fn draw_string(&mut self, string: &str, x: u16, y: u16) {
+        let mut t_x = x;
+        let glyphs = string
+            .chars()
+            .enumerate()
+            .map(|(_, character)| {
+                self.get_glyph(GlyphKey {
+                    character,
+                    font_key: self.font_key,
+                    size: self.size,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        for glyph in glyphs {
+            self.batch.add_item(t_x, y, 255, 255, 255, &glyph);
+
+            t_x += (glyph.width as u16) + 3;
+        }
+
+        self.render_batch();
+    }
+
     pub fn render_batch(&mut self) {
         unsafe {
             gl::UseProgram(self.program.id);
+            gl::ActiveTexture(gl::TEXTURE0);
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_instance);
-            gl::ActiveTexture(gl::TEXTURE0);
-
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC1_COLOR, gl::ONE_MINUS_SRC1_COLOR);
-            gl::Enable(gl::MULTISAMPLE);
-            gl::DepthMask(gl::FALSE);
 
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
@@ -335,8 +349,8 @@ impl TextRenderer {
 
             gl::Uniform2f(
                 gl::GetUniformLocation(self.program.id, b"cellDim\0".as_ptr() as *const _),
-                15.,
-                15.,
+                self.size.as_f32_pts(),
+                self.size.as_f32_pts() * 2.,
             );
             gl::DrawElementsInstanced(
                 gl::TRIANGLES,
@@ -345,9 +359,6 @@ impl TextRenderer {
                 ptr::null(),
                 self.batch.len() as GLsizei,
             );
-
-            gl::Disable(gl::BLEND);
-            gl::Disable(gl::MULTISAMPLE);
 
             gl::UseProgram(0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
@@ -519,19 +530,17 @@ impl Atlas {
             *active_tex = 0;
         }
 
-        // Update Atlas state.
-        self.row_extent = offset_x + width;
+        self.row_extent += width;
         if height > self.row_tallest {
             self.row_tallest = height;
         }
 
-        // Generate UV coordinates.
         let uv_bot = offset_y as f32 / self.height as f32;
         let uv_left = offset_x as f32 / self.width as f32;
         let uv_height = height as f32 / self.height as f32;
         let uv_width = width as f32 / self.width as f32;
 
-        println!("{}", self.id);
+        println!("{} x {} = {}", width, height, glyph.character);
 
         Glyph {
             tex_id: self.id,
@@ -547,7 +556,6 @@ impl Atlas {
         }
     }
 
-    /// Check if there's room in the current row for given glyph.
     fn room_in_row(&self, raw: &RasterizedGlyph) -> bool {
         let next_extent = self.row_extent + raw.width as i32;
         let enough_width = next_extent <= self.width;
@@ -556,7 +564,6 @@ impl Atlas {
         enough_width && enough_height
     }
 
-    /// Mark current row as finished and prepare to insert into the next row.
     fn advance_row(&mut self) -> Result<(), AtlasInsertError> {
         let advance_to = self.row_baseline + self.row_tallest;
         if self.height - advance_to <= 0 {
