@@ -69,11 +69,18 @@ fn main() {
                     gl::Viewport(0, 0, size.x as i32, size.y as i32);
 
                     renderer.draw();
-                    font.draw_string(
-                        "Hello. Im Cheeseman and this is a test. Also, give me all your money! 🍺 中华人民共和国",
-                        0,
-                        0,
-                    );
+
+                    // Some basic Text
+                    let text = "Cheeseman™ 😂🍺 中华人民共和国";
+
+                    let (width, height) = (size.x as u16, size.y as u16);
+                    let (font_length, font_height) =
+                        (font.get_lenght(text) as u16, font.get_height() as u16);
+
+                    let x = width / 2 - font_length / 2;
+                    let y = height / 2 - font_height as u16 / 2;
+
+                    font.draw_string(text, x, y, 0xE3242B);
                 }
                 windowed_context.swap_buffers().unwrap();
             }

@@ -260,7 +260,7 @@ impl TextRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
-        let size = Size::new(13.);
+        let size = Size::new(25.);
 
         let mut rasterizer = Rasterizer::new(dpr as f32, false).unwrap();
         let font_key = compute_font_keys(&mut rasterizer, size);
@@ -307,7 +307,35 @@ impl TextRenderer {
         self.render_batch();
     }
 
-    pub fn draw_string(&mut self, string: &str, x: u16, y: u16) {
+    pub fn get_lenght(&mut self, string: &str) -> i16 {
+        let width: i16 = string
+            .chars()
+            .enumerate()
+            .map(|(_, character)| {
+                let mut w = self
+                    .get_glyph(GlyphKey {
+                        character,
+                        font_key: self.font_key,
+                        size: self.size,
+                    })
+                    .width;
+
+                if w == 0 {
+                    w = self.metrics.average_advance as i16;
+                }
+
+                w + 3
+            })
+            .sum();
+
+        width
+    }
+
+    pub fn get_height(&self) -> i16 {
+        self.metrics.line_height as i16
+    }
+
+    pub fn draw_string(&mut self, string: &str, x: u16, y: u16, hex: i32) {
         let mut t_x = x;
         let glyphs = string
             .chars()
@@ -322,7 +350,11 @@ impl TextRenderer {
             .collect::<Vec<_>>();
 
         for glyph in glyphs {
-            self.batch.add_item(t_x, y, 255, 255, 255, &glyph);
+            let red = ((hex >> 16) & 0xFF) as u8;
+            let green = ((hex >> 8) & 0xFF) as u8;
+            let blue = (hex & 0xFF) as u8;
+
+            self.batch.add_item(t_x, y, red, green, blue, &glyph);
 
             if glyph.width <= 0 {
                 t_x += self.metrics.average_advance as u16;
