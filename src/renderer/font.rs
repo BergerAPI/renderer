@@ -12,7 +12,7 @@ use std::ptr;
 use crate::vectors::Vec2f;
 
 use crossfont::{
-    BitmapBuffer, Error as RasterizerError, FontDesc, FontKey, GlyphKey, Rasterize,
+    BitmapBuffer, Error as RasterizerError, FontDesc, FontKey, GlyphKey, Metrics, Rasterize,
     RasterizedGlyph, Rasterizer, Size, Slant, Style, Weight,
 };
 
@@ -84,6 +84,7 @@ pub struct TextRenderer {
     font_key: FontKey,
     cache: HashMap<GlyphKey, Glyph, BuildHasherDefault<FnvHasher>>,
     rasterizer: Rasterizer,
+    metrics: Metrics,
 }
 
 #[derive(Debug)]
@@ -259,10 +260,11 @@ impl TextRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
-        let size = Size::new(26.);
+        let size = Size::new(13.);
 
         let mut rasterizer = Rasterizer::new(dpr as f32, false).unwrap();
         let font_key = compute_font_keys(&mut rasterizer, size);
+        let metrics = rasterizer.metrics(font_key, size).unwrap();
 
         let mut renderer = Self {
             program,
@@ -275,6 +277,7 @@ impl TextRenderer {
             batch: Batch::new(),
             cache: HashMap::default(),
             rasterizer,
+            metrics,
             size,
             font_key,
         };
@@ -321,7 +324,11 @@ impl TextRenderer {
         for glyph in glyphs {
             self.batch.add_item(t_x, y, 255, 255, 255, &glyph);
 
-            t_x += (glyph.width as u16) + 3;
+            if glyph.width <= 0 {
+                t_x += self.metrics.average_advance as u16;
+            }
+
+            t_x += glyph.width as u16 + 3;
         }
 
         self.render_batch();
@@ -539,8 +546,6 @@ impl Atlas {
         let uv_left = offset_x as f32 / self.width as f32;
         let uv_height = height as f32 / self.height as f32;
         let uv_width = width as f32 / self.width as f32;
-
-        println!("{} x {} = {}", width, height, glyph.character);
 
         Glyph {
             tex_id: self.id,

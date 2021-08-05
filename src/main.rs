@@ -16,7 +16,7 @@ pub use renderer::font::TextRenderer;
 pub use renderer::{RenderRect, Renderer, Rgb};
 pub use vectors::Vec2f;
 
-use glutin::dpi::{LogicalSize, PhysicalSize};
+use glutin::dpi::PhysicalSize;
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
@@ -69,7 +69,11 @@ fn main() {
                     gl::Viewport(0, 0, size.x as i32, size.y as i32);
 
                     renderer.draw();
-                    font.draw_string("日本国 日本 اَلْعَرَبِيَّةُ‎ 😎🔞💩", 0, 0);
+                    font.draw_string(
+                        "Hello. Im Cheeseman and this is a test. Also, give me all your money! 🍺 中华人民共和国",
+                        0,
+                        0,
+                    );
                 }
                 windowed_context.swap_buffers().unwrap();
             }
