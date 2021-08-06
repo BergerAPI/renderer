@@ -49,7 +49,7 @@ fn main() {
     };
 
     let mut renderer = Renderer::new(size).unwrap();
-    let mut font = TextRenderer::new(size, estimated_dpr).unwrap();
+    let mut font = TextRenderer::new("FiraCode Nerd Font", 35., size, estimated_dpr).unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -71,16 +71,16 @@ fn main() {
                     renderer.draw();
 
                     // Some basic Text
-                    let text = "Cheeseman™ 😂🍺 中华人民共和国";
+                    let text = "Centered Text 🍺🔞🥳 印刷通用汉 疊叠";
 
                     let (width, height) = (size.x as u16, size.y as u16);
                     let (font_length, font_height) =
-                        (font.get_lenght(text) as u16, font.get_height() as u16);
+                        (font.get_length(text) as u16, font.get_height() as u16);
 
                     let x = width / 2 - font_length / 2;
                     let y = height / 2 - font_height as u16 / 2;
 
-                    font.draw_string(text, x, y, 0xE3242B);
+                    font.draw_string(text, x, y, 0x95A78D);
                 }
                 windowed_context.swap_buffers().unwrap();
             }

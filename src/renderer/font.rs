@@ -154,11 +154,11 @@ impl Batch {
     }
 }
 
-fn compute_font_keys(rasterizer: &mut Rasterizer, size: Size) -> FontKey {
+fn compute_font_keys(rasterizer: &mut Rasterizer, font: &str, size: Size) -> FontKey {
     rasterizer
         .load_font(
             &FontDesc::new(
-                "FiraCode Nerd Font",
+                font,
                 Style::Description {
                     slant: Slant::Normal,
                     weight: Weight::Normal,
@@ -170,7 +170,12 @@ fn compute_font_keys(rasterizer: &mut Rasterizer, size: Size) -> FontKey {
 }
 
 impl TextRenderer {
-    pub fn new(screen_size: Vec2f, dpr: f64) -> Result<TextRenderer, ShaderError> {
+    pub fn new(
+        font: &str,
+        font_size: f32,
+        screen_size: Vec2f,
+        dpr: f64,
+    ) -> Result<TextRenderer, ShaderError> {
         let program = Program::new(
             Shader::new(gl::VERTEX_SHADER, VERTEX)?,
             Shader::new(gl::FRAGMENT_SHADER, FRAGMENT)?,
@@ -260,10 +265,10 @@ impl TextRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
-        let size = Size::new(25.);
+        let size = Size::new(font_size);
 
         let mut rasterizer = Rasterizer::new(dpr as f32, false).unwrap();
-        let font_key = compute_font_keys(&mut rasterizer, size);
+        let font_key = compute_font_keys(&mut rasterizer, font, size);
         let metrics = rasterizer.metrics(font_key, size).unwrap();
 
         let mut renderer = Self {
@@ -307,7 +312,7 @@ impl TextRenderer {
         self.render_batch();
     }
 
-    pub fn get_lenght(&mut self, string: &str) -> i16 {
+    pub fn get_length(&mut self, string: &str) -> i16 {
         let width: i16 = string
             .chars()
             .enumerate()
