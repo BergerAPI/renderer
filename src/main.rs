@@ -68,10 +68,8 @@ fn main() {
 
                     gl::Viewport(0, 0, size.x as i32, size.y as i32);
 
-                    renderer.draw();
-
                     // Some basic Text
-                    let text = "Centered Text 🍺🔞🥳 印刷通用汉 疊叠";
+                    let text = "Why would you trust cheeseman, mister?";
 
                     let (width, height) = (size.x as u16, size.y as u16);
                     let (font_length, font_height) =
@@ -81,6 +79,15 @@ fn main() {
                     let y = height / 2 - font_height as u16 / 2;
 
                     font.draw_string(text, x, y, 0x95A78D);
+                    renderer.rectangle(&RenderRect {
+                        x: 0.,
+                        y: 0.,
+                        width: 200.,
+                        height: 200.,
+                        color: Rgb { r: 255, g: 0, b: 0 },
+                    });
+
+                    renderer.draw();
                 }
                 windowed_context.swap_buffers().unwrap();
             }

@@ -260,6 +260,10 @@ impl TextRenderer {
             add_attr!(4, gl::FLOAT, f32);
             add_attr!(4, gl::UNSIGNED_BYTE, u8);
 
+            gl::UseProgram(0);
+            gl::Disable(gl::BLEND);
+            gl::Disable(gl::MULTISAMPLE);
+
             gl::BindVertexArray(0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
@@ -374,6 +378,11 @@ impl TextRenderer {
     pub fn render_batch(&mut self) {
         unsafe {
             gl::UseProgram(self.program.id);
+
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC1_COLOR, gl::ONE_MINUS_SRC1_COLOR);
+            gl::Enable(gl::MULTISAMPLE);
+
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindVertexArray(self.vao);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo);
@@ -408,6 +417,9 @@ impl TextRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
+
+            gl::Disable(gl::BLEND);
+            gl::Disable(gl::MULTISAMPLE);
 
             self.batch.clear();
         }
