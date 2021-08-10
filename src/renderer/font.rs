@@ -9,6 +9,9 @@ use std::hash::BuildHasherDefault;
 use std::mem::size_of;
 use std::ptr;
 
+use gl_matrix::common::*;
+use gl_matrix::mat4;
+
 use crate::vectors::Vec2f;
 
 use crossfont::{
@@ -49,8 +52,8 @@ pub struct Glyph {
 #[derive(Debug)]
 #[repr(C)]
 struct InstanceData {
-    x: u16,
-    y: u16,
+    x: i16,
+    y: i16,
     left: i16,
     top: i16,
     width: i16,
@@ -85,7 +88,7 @@ pub struct TextRenderer {
     cache: HashMap<GlyphKey, Glyph, BuildHasherDefault<FnvHasher>>,
     rasterizer: Rasterizer,
     metrics: Metrics,
-    spacing: u16,
+    spacing: i16,
 }
 
 #[derive(Debug)]
@@ -107,7 +110,7 @@ impl Batch {
         }
     }
 
-    pub fn add_item(&mut self, x: u16, y: u16, r: u8, g: u8, b: u8, glyph: &Glyph) {
+    pub fn add_item(&mut self, x: i16, y: i16, r: u8, g: u8, b: u8, glyph: &Glyph) {
         if self.is_empty() {
             self.tex = glyph.tex_id;
         }
@@ -185,21 +188,26 @@ impl TextRenderer {
         let mut vao: GLuint = 0;
         let mut ebo: GLuint = 0;
 
-        let scale_x = 2. / screen_size.x;
-        let scale_y = -2. / screen_size.y;
-        let offset_x = -1.;
-        let offset_y = 1.;
+        let mut proj_matrix: Mat4 = [0.; 16];
+        mat4::ortho(
+            &mut proj_matrix,
+            0.,
+            screen_size.x,
+            screen_size.y,
+            0.,
+            0.,
+            1000.,
+        );
 
         let mut vbo_instance: GLuint = 0;
 
         unsafe {
             gl::UseProgram(program.id);
-            gl::Uniform4f(
+            gl::UniformMatrix4fv(
                 gl::GetUniformLocation(program.id, b"projection\0".as_ptr() as *const _),
-                offset_x,
-                offset_y,
-                scale_x,
-                scale_y,
+                1,
+                gl::FALSE,
+                proj_matrix.as_ptr(),
             );
 
             gl::UseProgram(0);
@@ -307,7 +315,7 @@ impl TextRenderer {
         Ok(renderer)
     }
 
-    pub fn draw_char(&mut self, character: char, x: u16, y: u16) {
+    pub fn draw_char(&mut self, character: char, x: i16, y: i16) {
         let glyph = self.get_glyph(GlyphKey {
             character,
             font_key: self.font_key,
@@ -335,7 +343,7 @@ impl TextRenderer {
                     w = self.metrics.average_advance as i16;
                 }
 
-                w + self.spacing as i16
+                w + self.spacing
             })
             .sum();
 
@@ -346,7 +354,7 @@ impl TextRenderer {
         self.metrics.line_height as i16
     }
 
-    pub fn draw_string(&mut self, string: &str, x: u16, y: u16, hex: i32) {
+    pub fn draw_string(&mut self, string: &str, x: i16, y: i16, hex: i32) {
         let mut t_x = x;
         let glyphs = string
             .chars()
@@ -368,10 +376,10 @@ impl TextRenderer {
             self.batch.add_item(t_x, y, red, green, blue, &glyph);
 
             if glyph.width <= 0 {
-                t_x += self.metrics.average_advance as u16;
+                t_x += self.metrics.average_advance as i16;
             }
 
-            t_x += glyph.width as u16 + self.spacing;
+            t_x += glyph.width + self.spacing;
         }
 
         self.render_batch();

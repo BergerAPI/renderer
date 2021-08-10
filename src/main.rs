@@ -71,21 +71,13 @@ fn main() {
                     // Some basic Text
                     let text = "This is a test!";
 
-                    let (width, height) = (size.x as u16, size.y as u16);
-                    let (font_length, font_height) =
-                        (font.get_length(text) as u16, font.get_height() as u16);
+                    let (width, height) = (size.x as i16, size.y as i16);
+                    let (font_length, font_height) = (font.get_length(text), font.get_height());
 
                     let x = width / 2 - font_length / 2;
-                    let y = height / 2 - font_height as u16 / 2;
+                    let y = height / 2 - font_height / 2;
 
-                    font.draw_string(text, x, y, 0xFFFFFF);
-                    renderer.rectangle(&RenderRect {
-                        x: 0.,
-                        y: 0.,
-                        width: 200.,
-                        height: 200.,
-                        color: Rgb { r: 255, g: 0, b: 0 },
-                    });
+                    font.draw_string(text, -4, 0, 0xFFFFFF);
 
                     renderer.draw();
                 }
