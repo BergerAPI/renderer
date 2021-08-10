@@ -19,7 +19,7 @@ use crossfont::{
 use bitflags::bitflags;
 
 const BATCH_MAX: usize = 0x1_0000;
-const ATLAS_SIZE: i32 = 1024;
+const ATLAS_SIZE: i32 = 2048;
 
 static FRAGMENT: &str = include_str!("../../res/text.frag");
 static VERTEX: &str = include_str!("../../res/text.vert");
@@ -85,6 +85,7 @@ pub struct TextRenderer {
     cache: HashMap<GlyphKey, Glyph, BuildHasherDefault<FnvHasher>>,
     rasterizer: Rasterizer,
     metrics: Metrics,
+    spacing: u16,
 }
 
 #[derive(Debug)]
@@ -289,6 +290,7 @@ impl TextRenderer {
             metrics,
             size,
             font_key,
+            spacing: 3,
         };
 
         let atlas = Atlas::new(ATLAS_SIZE);
@@ -333,7 +335,7 @@ impl TextRenderer {
                     w = self.metrics.average_advance as i16;
                 }
 
-                w + 3
+                w + self.spacing as i16
             })
             .sum();
 
@@ -369,7 +371,7 @@ impl TextRenderer {
                 t_x += self.metrics.average_advance as u16;
             }
 
-            t_x += glyph.width as u16 + 3;
+            t_x += glyph.width as u16 + self.spacing;
         }
 
         self.render_batch();

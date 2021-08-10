@@ -49,7 +49,7 @@ fn main() {
     };
 
     let mut renderer = Renderer::new(size).unwrap();
-    let mut font = TextRenderer::new("FiraCode Nerd Font", 35., size, estimated_dpr).unwrap();
+    let mut font = TextRenderer::new("Roboto", 100., size, estimated_dpr).unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -69,7 +69,7 @@ fn main() {
                     gl::Viewport(0, 0, size.x as i32, size.y as i32);
 
                     // Some basic Text
-                    let text = "Why would you trust cheeseman, mister?";
+                    let text = "This is a test!";
 
                     let (width, height) = (size.x as u16, size.y as u16);
                     let (font_length, font_height) =
@@ -78,7 +78,7 @@ fn main() {
                     let x = width / 2 - font_length / 2;
                     let y = height / 2 - font_height as u16 / 2;
 
-                    font.draw_string(text, x, y, 0x95A78D);
+                    font.draw_string(text, x, y, 0xFFFFFF);
                     renderer.rectangle(&RenderRect {
                         x: 0.,
                         y: 0.,
