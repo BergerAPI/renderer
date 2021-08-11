@@ -49,7 +49,7 @@ fn main() {
     };
 
     let mut renderer = Renderer::new(size).unwrap();
-    let mut font = TextRenderer::new("Roboto", 100., size, estimated_dpr).unwrap();
+    let mut font = TextRenderer::new("Roboto", 40., size, estimated_dpr).unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -69,7 +69,7 @@ fn main() {
                     gl::Viewport(0, 0, size.x as i32, size.y as i32);
 
                     // Some basic Text
-                    let text = "This is a test!";
+                    let text = "汉语/漢語, Hànyǔ or 中文, 😍🔞😎";
 
                     let (width, height) = (size.x as i16, size.y as i16);
                     let (font_length, font_height) = (font.get_length(text), font.get_height());
@@ -77,7 +77,7 @@ fn main() {
                     let x = width / 2 - font_length / 2;
                     let y = height / 2 - font_height / 2;
 
-                    font.draw_string(text, -1, y, 0xFFFFFF);
+                    font.draw_string(text, 0, 0, 0xFFFFFF);
 
                     renderer.draw();
                 }

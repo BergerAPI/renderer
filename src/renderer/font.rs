@@ -340,7 +340,7 @@ impl TextRenderer {
                     .width;
 
                 if w == 0 {
-                    w = self.metrics.average_advance as i16;
+                    w = self.metrics.average_advance as i16 / 2;
                 }
 
                 w + self.spacing
@@ -376,7 +376,7 @@ impl TextRenderer {
             self.batch.add_item(t_x, y, red, green, blue, &glyph);
 
             if glyph.width <= 0 {
-                t_x += self.metrics.average_advance as i16;
+                t_x += self.metrics.average_advance as i16 / 2;
             }
 
             t_x += glyph.width + self.spacing;
