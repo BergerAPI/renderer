@@ -23,7 +23,14 @@ use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 
 fn main() {
-    let size = Vec2f { x: 1600., y: 1200. };
+    let mut size = Vec2f { x: 1600., y: 1200. };
+
+    // On windows the physical size is a bit too big
+    if std::env::consts::OS == "windows" {
+        size.x /= 2.;
+        size.y /= 2.;
+    }
+
     let el = EventLoop::new();
     let wb = WindowBuilder::new()
         .with_title("Renderer")
@@ -49,7 +56,7 @@ fn main() {
     };
 
     let mut renderer = Renderer::new(size).unwrap();
-    let mut font = TextRenderer::new("Roboto", 40., size, estimated_dpr).unwrap();
+    let mut font = TextRenderer::new("Roboto", 20., size, estimated_dpr).unwrap();
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -77,7 +84,7 @@ fn main() {
                     let x = width / 2 - font_length / 2;
                     let y = height / 2 - font_height / 2;
 
-                    font.draw_string(text, 0, 0, 0xFFFFFF);
+                    font.draw_string(text, x, y, 0xFFFFFF);
 
                     renderer.draw();
                 }

@@ -298,7 +298,7 @@ impl TextRenderer {
             metrics,
             size,
             font_key,
-            spacing: 8,
+            spacing: size.as_f32_pts() as i16 / 8,
         };
 
         let atlas = Atlas::new(ATLAS_SIZE);
@@ -354,8 +354,17 @@ impl TextRenderer {
         self.metrics.line_height as i16
     }
 
-    pub fn draw_string(&mut self, string: &str, x: i16, y: i16, hex: i32) {
-        let mut t_x = x;
+    pub fn draw_string(&mut self, string: &str, t_x: i16, t_y: i16, hex: i32) {
+        let mut x = t_x;
+        let mut y = t_y;
+
+        // somehow, on windows and linux there is a small offset
+        if std::env::consts::OS == "windows" || std::env::consts::OS == "linux" {
+            if y - self.get_height() >= 0 {
+                y -= self.get_height();
+            }
+        }
+
         let glyphs = string
             .chars()
             .enumerate()
@@ -373,13 +382,13 @@ impl TextRenderer {
             let green = ((hex >> 8) & 0xFF) as u8;
             let blue = (hex & 0xFF) as u8;
 
-            self.batch.add_item(t_x, y, red, green, blue, &glyph);
+            self.batch.add_item(x, y, red, green, blue, &glyph);
 
             if glyph.width <= 0 {
-                t_x += self.metrics.average_advance as i16 / 2;
+                x += self.metrics.average_advance as i16 / 2;
             }
 
-            t_x += glyph.width + self.spacing;
+            x += glyph.width + self.spacing;
         }
 
         self.render_batch();
