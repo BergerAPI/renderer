@@ -77,7 +77,7 @@ fn main() {
                     let x = width / 2 - font_length / 2;
                     let y = height / 2 - font_height / 2;
 
-                    font.draw_string(text, -4, 0, 0xFFFFFF);
+                    font.draw_string(text, -1, y, 0xFFFFFF);
 
                     renderer.draw();
                 }

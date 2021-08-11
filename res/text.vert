@@ -16,12 +16,13 @@ void main() {
     position.x = (gl_VertexID == 0 || gl_VertexID == 1) ? 1. : 0.;
     position.y = (gl_VertexID == 0 || gl_VertexID == 3) ? 0. : 1.;
 
+    vec2 glyphPosition;
     vec2 glyphSize = glyph.zw;
-    vec2 glyphOffset = glyph.xy;
-    glyphOffset.y = cellDim.y - glyphOffset.y;
 
-    vec2 finalPosition = coords + glyphOffset + glyphSize * position;
-    gl_Position = projection * vec4(finalPosition, 0.0, 1.0);
+    glyphPosition.x = 0;
+    glyphPosition.y = cellDim.y - glyph.y;
+
+    gl_Position = projection * vec4(coords + glyphPosition + glyphSize * position, 0.0, 1.0);
 
     vec2 uvOffset = uv.xy;
     vec2 uvSize = uv.zw;

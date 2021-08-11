@@ -117,7 +117,7 @@ impl Batch {
 
         let mut cell_flags = RenderingGlyphFlags::empty();
         cell_flags.set(RenderingGlyphFlags::COLORED, glyph.multicolor);
-        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, false);
+        cell_flags.set(RenderingGlyphFlags::WIDE_CHAR, true);
 
         self.instances.push(InstanceData {
             x,
@@ -298,7 +298,7 @@ impl TextRenderer {
             metrics,
             size,
             font_key,
-            spacing: 3,
+            spacing: 8,
         };
 
         let atlas = Atlas::new(ATLAS_SIZE);
